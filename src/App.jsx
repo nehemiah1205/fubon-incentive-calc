@@ -278,7 +278,38 @@ export default function App() {
         </div>
 
         {/* 職級選擇 */}
-        <Card title="① 選擇職級" icon={<Users size={16} />}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 10,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: serif,
+              fontSize: 14,
+              fontWeight: 700,
+              color: "#2E6DA4",
+              letterSpacing: 2,
+            }}
+          >
+            輸入資料
+          </span>
+          <div style={{ flex: 1, height: 1, background: "#D3E6F5" }} />
+        </div>
+
+        <div
+          style={{
+            background: "linear-gradient(160deg, #F0F7FD 0%, #DCEAF8 100%)",
+            border: "1px solid #D3E6F5",
+            borderRadius: 16,
+            padding: 16,
+            marginBottom: 16,
+          }}
+        >
+          <Card title="① 選擇職級" icon={<Users size={16} />} titleColor="#2E6DA4">
           <div style={{ display: "flex", gap: 12 }}>
             {[
               { key: "ca", label: "業務同仁 / RSA / HRA（CA組獎金表）" },
@@ -310,7 +341,7 @@ export default function App() {
         </Card>
 
         {/* 本人各季業績 */}
-        <Card title="② 本人各季核實 FYC 業績" icon={<TrendingUp size={16} />}>
+        <Card title="② 本人各季核實 FYC 業績" icon={<TrendingUp size={16} />} titleColor="#2E6DA4">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10 }}>
             {[0, 1, 2, 3].map((i) => (
               <QField
@@ -324,7 +355,7 @@ export default function App() {
         </Card>
 
         {/* 增員名單 */}
-        <Card title="③ 增員名單（被增員者）" icon={<Users size={16} />}>
+        <Card title="③ 增員名單（被增員者）" icon={<Users size={16} />} titleColor="#2E6DA4">
           {recruits.map((r) => (
             <div
               key={r.id}
@@ -457,9 +488,10 @@ export default function App() {
             <Plus size={15} /> 新增增員名單
           </button>
         </Card>
+        </div>
 
         {/* ---- 結果 ---- */}
-        <Card title="④ 試算結果" icon={<Award size={16} />} accent>
+        <Card title="試算結果" icon={<Award size={16} />} accent>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <Badge>超級獎金</Badge>
             <SectionLabel style={{ marginBottom: 0 }}>季超級個人獎金</SectionLabel>
@@ -494,7 +526,7 @@ export default function App() {
             value={result.homerun}
             note={result.homerun ? "已達成 15,000 元" : "尚未四季全數達標"}
           />
-          <ResultRow label="季獎金＋全壘打獎金 合計（戰功總額）" value={result.baseTotal} strong />
+          <ResultRow label="季獎金＋全壘打獎金 合計" value={result.baseTotal} strong />
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 18, marginBottom: 10 }}>
             <Badge>增員加碼</Badge>
@@ -682,7 +714,7 @@ export default function App() {
   );
 }
 
-function Card({ title, icon, children, accent }) {
+function Card({ title, icon, children, accent, titleColor }) {
   return (
     <div
       style={{
@@ -698,7 +730,7 @@ function Card({ title, icon, children, accent }) {
           display: "flex",
           alignItems: "center",
           gap: 8,
-          color: C.accent,
+          color: titleColor || C.accent,
           fontFamily: serif,
           fontSize: 15,
           fontWeight: 600,
