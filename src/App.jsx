@@ -1,6 +1,29 @@
 import React, { useState, useMemo } from "react";
 import { Plus, Trash2, TrendingUp, Award, Users, Calculator } from "lucide-react";
 
+// ============================================================
+// 設計語彙（Design Tokens）
+// 深松石綠 × 石板藍，紙感淺底，襯線標題呼應品牌識別
+// ============================================================
+const C = {
+  ink: "#16302E",        // 標題／強調文字（深松石墨綠）
+  body: "#41585A",       // 內文文字
+  muted: "#84999B",      // 輔助說明文字
+  paper: "#F6F8F3",      // 頁面底色（起）
+  paper2: "#EEF3EF",     // 頁面底色（迄）
+  surface: "#FFFFFF",    // 卡片底色
+  surfaceTint: "#F4F8F5",// 增員子卡片底色（微綠）
+  line: "#DEE7E1",       // 一般邊框
+  lineSoft: "#EAF0EC",   // 表格細線
+  accent: "#1F6F5C",     // 主強調色（深松石綠）
+  accent2: "#4A7C9E",    // 次強調色（石板藍）
+  accentTint: "#E7F1EC", // 強調底色（極淺綠）
+  warn: "#B4694A",       // 刪除／警示（陶土紅棕，低飽和）
+};
+
+const serif = "'Noto Serif TC', 'Microsoft JhengHei', serif";
+const sans = "'Noto Sans TC', 'Microsoft JhengHei', system-ui, sans-serif";
+
 // ---------- 獎金級距表 ----------
 const CA_TABLE = [
   { min: 720000, bonus: 27000 },
@@ -59,7 +82,11 @@ const newRecruit = () => ({
   fyc: [0, 0, 0, 0],
   quarterEmployed: [true, true, true, true],
   yearEndEmployed: true,
+  falconEligible: true,
 });
+
+// 獵鷹計畫：4~12月報聘（即第2、3、4季）適用
+const isFalconQuarter = (reportQ) => reportQ >= 2;
 
 export default function App() {
   const [role, setRole] = useState("ca"); // ca | sup
@@ -155,16 +182,32 @@ export default function App() {
         if (qIdx < r.reportQ - 1) return;
         const fyc = r.fyc[qIdx] || 0;
         let b = 0;
-        if (fyc >= 45000) b = Math.min(fyc * 0.2, 30000);
-        else if (fyc >= 30000) b = fyc * 0.1;
+        let rate = 0;
+        if (fyc >= 45000) {
+          rate = 0.2;
+          b = Math.min(fyc * 0.2, 30000);
+        } else if (fyc >= 30000) {
+          rate = 0.1;
+          b = fyc * 0.1;
+        }
         if (b > 0) {
           q34Bonus += b;
-          q34Detail.push({ name: r.name, q: qIdx + 1, fyc, b });
+          q34Detail.push({ name: r.name, q: qIdx + 1, fyc, b, rate });
         }
       });
     });
 
-    const finalTotal = baseTotal + annualRecruitBonus + q34Bonus;
+    // ---- 獵鷹計畫獎金（4~12月新聘，每人10,000元，需6個月差勤率達70%）----
+    let falconBonus = 0;
+    const falconDetail = [];
+    recruits.forEach((r) => {
+      if (!isFalconQuarter(r.reportQ)) return;
+      if (!r.falconEligible) return;
+      falconBonus += 10000;
+      falconDetail.push({ name: r.name, reportQ: r.reportQ });
+    });
+
+    const finalTotal = baseTotal + annualRecruitBonus + q34Bonus + falconBonus;
 
     return {
       quarterly,
@@ -178,6 +221,8 @@ export default function App() {
       annualRecruitBonus,
       q34Bonus,
       q34Detail,
+      falconBonus,
+      falconDetail,
       finalTotal,
     };
   }, [ownFyc, recruits, table]);
@@ -185,12 +230,11 @@ export default function App() {
   return (
     <div
       style={{
-        background: "#0B1B3A",
+        background: `linear-gradient(160deg, ${C.paper} 0%, ${C.paper2} 100%)`,
         minHeight: "100%",
-        color: "#E8E4D8",
-        fontFamily:
-          "'Noto Sans TC','Microsoft JhengHei',system-ui,sans-serif",
-        padding: "24px 16px",
+        color: C.body,
+        fontFamily: sans,
+        padding: "28px 16px 48px",
       }}
     >
       <div style={{ maxWidth: 980, margin: "0 auto" }}>
@@ -198,31 +242,35 @@ export default function App() {
         <div
           style={{
             textAlign: "center",
-            marginBottom: 28,
-            paddingBottom: 20,
-            borderBottom: "2px solid #C9A227",
+            marginBottom: 32,
+            paddingBottom: 22,
+            borderBottom: `1px solid ${C.line}`,
           }}
         >
           <div
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: 10,
-              color: "#C9A227",
-              fontSize: 13,
-              letterSpacing: 3,
-              marginBottom: 6,
+              gap: 8,
+              color: "#111111",
+              fontFamily: sans,
+              fontSize: 20,
+              fontWeight: 700,
+              letterSpacing: 1.5,
+              marginBottom: 8,
             }}
           >
-            <Calculator size={16} />
+            <Calculator size={18} />
             115年超級獎勵專案辦法（8/13修訂版）
           </div>
           <h1
             style={{
-              fontSize: 26,
-              fontWeight: 700,
+              fontFamily: serif,
+              fontSize: 16,
+              fontWeight: 600,
               margin: 0,
-              color: "#F5F1E6",
+              color: C.accent2,
+              letterSpacing: 1,
             }}
           >
             個人業績暨增員獎金試算系統
@@ -245,13 +293,14 @@ export default function App() {
                   borderRadius: 8,
                   border:
                     role === opt.key
-                      ? "1.5px solid #C9A227"
-                      : "1px solid #2A3A5C",
-                  background: role === opt.key ? "#1A2B52" : "transparent",
-                  color: role === opt.key ? "#F5F1E6" : "#9AA5C0",
+                      ? `1.5px solid ${C.accent}`
+                      : `1px solid ${C.line}`,
+                  background: role === opt.key ? C.accentTint : "transparent",
+                  color: role === opt.key ? C.ink : C.muted,
                   cursor: "pointer",
                   fontSize: 13,
                   fontWeight: role === opt.key ? 600 : 400,
+                  transition: "all 0.15s ease",
                 }}
               >
                 {opt.label}
@@ -280,11 +329,11 @@ export default function App() {
             <div
               key={r.id}
               style={{
-                border: "1px solid #2A3A5C",
+                border: `1px solid ${C.line}`,
                 borderRadius: 10,
                 padding: 14,
                 marginBottom: 12,
-                background: "#111F42",
+                background: C.surfaceTint,
               }}
             >
               <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
@@ -293,7 +342,7 @@ export default function App() {
                   onChange={(e) => updateRecruit(r.id, { name: e.target.value })}
                   style={inputStyle({ flex: 1, fontWeight: 600 })}
                 />
-                <label style={{ fontSize: 12, color: "#9AA5C0" }}>報聘季別</label>
+                <label style={{ fontSize: 12, color: C.muted }}>報聘季別</label>
                 <select
                   value={r.reportQ}
                   onChange={(e) =>
@@ -312,7 +361,7 @@ export default function App() {
                   style={{
                     background: "transparent",
                     border: "none",
-                    color: "#C97A5B",
+                    color: C.warn,
                     cursor: "pointer",
                     padding: 6,
                   }}
@@ -340,7 +389,7 @@ export default function App() {
                             alignItems: "center",
                             gap: 6,
                             fontSize: 11,
-                            color: "#9AA5C0",
+                            color: C.muted,
                             marginTop: 4,
                           }}
                         >
@@ -363,7 +412,7 @@ export default function App() {
                   alignItems: "center",
                   gap: 6,
                   fontSize: 12,
-                  color: "#C9A227",
+                  color: C.accent,
                   marginTop: 10,
                 }}
               >
@@ -376,6 +425,32 @@ export default function App() {
                 />
                 年度末獎勵核算時仍持續在職（第11、12工作月報聘者需在職滿3個月）
               </label>
+
+              {isFalconQuarter(r.reportQ) ? (
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontSize: 12,
+                    color: C.accent2,
+                    marginTop: 6,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={r.falconEligible}
+                    onChange={(e) =>
+                      updateRecruit(r.id, { falconEligible: e.target.checked })
+                    }
+                  />
+                  符合獵鷹計畫資格：報聘後6個月內差勤率達70%（可獲得10,000元）
+                </label>
+              ) : (
+                <div style={{ fontSize: 11, color: C.muted, marginTop: 6 }}>
+                  獵鷹計畫僅適用4~12月報聘（第2~4季），此新人不適用
+                </div>
+              )}
             </div>
           ))}
           <button onClick={addRecruit} style={addBtnStyle}>
@@ -385,7 +460,10 @@ export default function App() {
 
         {/* ---- 結果 ---- */}
         <Card title="④ 試算結果" icon={<Award size={16} />} accent>
-          <SectionLabel>季超級個人獎金</SectionLabel>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <Badge>超級獎金</Badge>
+            <SectionLabel style={{ marginBottom: 0 }}>季超級個人獎金</SectionLabel>
+          </div>
           <table style={tableStyle}>
             <thead>
               <tr>
@@ -403,7 +481,7 @@ export default function App() {
                   <Td>{fmt(ownFyc[q.qIdx])}</Td>
                   <Td>{fmt(q.recruitBonusFyc)}</Td>
                   <Td>{fmt(q.projectFyc)}</Td>
-                  <Td strong gold={q.bonus > 0}>
+                  <Td strong accent={q.bonus > 0}>
                     {fmt(q.bonus)}
                   </Td>
                 </tr>
@@ -418,7 +496,10 @@ export default function App() {
           />
           <ResultRow label="季獎金＋全壘打獎金 合計（戰功總額）" value={result.baseTotal} strong />
 
-          <SectionLabel style={{ marginTop: 18 }}>年度增員加碼獎金</SectionLabel>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 18, marginBottom: 10 }}>
+            <Badge>增員加碼</Badge>
+            <SectionLabel style={{ marginBottom: 0 }}>年度增員加碼獎金</SectionLabel>
+          </div>
           <table style={tableStyle}>
             <thead>
               <tr>
@@ -441,12 +522,15 @@ export default function App() {
           </table>
           <ResultRow label="增員積分合計" value={result.totalPoints} isPoints />
           <ResultRow
-            label={`對應級距：${result.band.label}（×${result.band.rate * 100}%）`}
+            label={`對應級距：${result.band.label}（個人獎金 × ${(1 + result.band.rate).toFixed(1)}）`}
             value={result.annualRecruitBonus}
             strong
           />
 
-          <SectionLabel style={{ marginTop: 18 }}>第三、四季增員績效獎金</SectionLabel>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 18, marginBottom: 10 }}>
+            <Badge>績效獎金</Badge>
+            <SectionLabel style={{ marginBottom: 0 }}>第三、四季增員績效獎金</SectionLabel>
+          </div>
           {result.q34Detail.length > 0 ? (
             <table style={tableStyle}>
               <thead>
@@ -454,6 +538,7 @@ export default function App() {
                   <Th>增員</Th>
                   <Th>季別</Th>
                   <Th>當季核實FYC</Th>
+                  <Th>適用比例</Th>
                   <Th>績效獎金</Th>
                 </tr>
               </thead>
@@ -463,7 +548,10 @@ export default function App() {
                     <Td>{d.name}</Td>
                     <Td>第{d.q}季</Td>
                     <Td>{fmt(d.fyc)}</Td>
-                    <Td gold strong>
+                    <Td accent strong>
+                      {d.rate * 100}%
+                    </Td>
+                    <Td accent strong>
                       {fmt(d.b)}
                     </Td>
                   </tr>
@@ -471,34 +559,122 @@ export default function App() {
               </tbody>
             </table>
           ) : (
-            <div style={{ fontSize: 12, color: "#9AA5C0", padding: "6px 0" }}>
+            <div style={{ fontSize: 12, color: C.muted, padding: "6px 0" }}>
               無符合資格之第三、四季報聘增員（需 115 年 7~12 工作月報聘且當季核實FYC達 30,000）
             </div>
           )}
           <ResultRow label="第三、四季增員績效獎金合計" value={result.q34Bonus} strong />
 
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 18, marginBottom: 10 }}>
+            <Badge>獵鷹獎金</Badge>
+            <SectionLabel style={{ marginBottom: 0 }}>獵鷹計畫獎金</SectionLabel>
+          </div>
+          {result.falconDetail.length > 0 ? (
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <Th>增員</Th>
+                  <Th>報聘季</Th>
+                  <Th>獎金</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {result.falconDetail.map((d, i) => (
+                  <tr key={i}>
+                    <Td>{d.name}</Td>
+                    <Td>第{d.reportQ}季</Td>
+                    <Td accent strong>
+                      {fmt(10000)}
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div style={{ fontSize: 12, color: C.muted, padding: "6px 0" }}>
+              無符合資格之獵鷹計畫新人（需 4~12 月報聘且6個月內差勤率達70%）
+            </div>
+          )}
+          <ResultRow label="獵鷹計畫獎金合計" value={result.falconBonus} strong />
+        </Card>
+
+        {/* ---- 獎金加總明細（總表） ---- */}
+        <div
+          style={{
+            background: C.surface,
+            border: `1px solid ${C.line}`,
+            borderRadius: 14,
+            padding: "24px 26px",
+            marginBottom: 16,
+          }}
+        >
           <div
             style={{
-              marginTop: 20,
-              padding: "18px 20px",
-              borderRadius: 12,
-              background: "linear-gradient(135deg,#1A2B52,#0B1B3A)",
-              border: "1.5px solid #C9A227",
               display: "flex",
+              alignItems: "baseline",
               justifyContent: "space-between",
-              alignItems: "center",
+              marginBottom: 18,
             }}
           >
-            <span style={{ fontSize: 15, color: "#F5F1E6", fontWeight: 600 }}>
+            <h2
+              style={{
+                fontFamily: serif,
+                fontSize: 17,
+                fontWeight: 600,
+                color: C.ink,
+                margin: 0,
+                letterSpacing: 0.5,
+              }}
+            >
+              獎金加總明細
+            </h2>
+            <span style={{ fontSize: 11, color: C.muted, letterSpacing: 1 }}>
+              SUMMARY
+            </span>
+          </div>
+
+          <div>
+            <LedgerRow label="季超級個人獎金＋全壘打獎金" value={result.baseTotal} />
+            <LedgerRow label="年度增員加碼獎金" value={result.annualRecruitBonus} />
+            <LedgerRow label="第三、四季增員績效獎金" value={result.q34Bonus} />
+            <LedgerRow label="獵鷹計畫獎金" value={result.falconBonus} last />
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "baseline",
+              marginTop: 16,
+              paddingTop: 16,
+              borderTop: `2px solid ${C.ink}`,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: serif,
+                fontSize: 16,
+                fontWeight: 600,
+                color: C.ink,
+              }}
+            >
               預估年度總獎金
             </span>
-            <span style={{ fontSize: 26, color: "#C9A227", fontWeight: 700 }}>
+            <span
+              style={{
+                fontFamily: serif,
+                fontSize: 30,
+                fontWeight: 700,
+                color: C.accent,
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
               NT$ {fmt(result.finalTotal)}
             </span>
           </div>
-        </Card>
+        </div>
 
-        <p style={{ fontSize: 11, color: "#6B7796", textAlign: "center", marginTop: 16 }}>
+        <p style={{ fontSize: 11, color: C.muted, textAlign: "center", marginTop: 16, lineHeight: 1.7 }}>
           ※ 本試算僅供內部參考，實際核發金額與資格認定以業務公告函（115富壽業企發字第108號）及正式核算結果為準。
         </p>
       </div>
@@ -510,8 +686,8 @@ function Card({ title, icon, children, accent }) {
   return (
     <div
       style={{
-        background: accent ? "#0F1E42" : "#101F44",
-        border: accent ? "1px solid #C9A227" : "1px solid #1F2E52",
+        background: accent ? C.accentTint : C.surface,
+        border: accent ? `1px solid ${C.accent}` : `1px solid ${C.line}`,
         borderRadius: 14,
         padding: 18,
         marginBottom: 16,
@@ -522,8 +698,9 @@ function Card({ title, icon, children, accent }) {
           display: "flex",
           alignItems: "center",
           gap: 8,
-          color: "#C9A227",
-          fontSize: 14,
+          color: C.accent,
+          fontFamily: serif,
+          fontSize: 15,
           fontWeight: 600,
           marginBottom: 14,
         }}
@@ -539,7 +716,7 @@ function Card({ title, icon, children, accent }) {
 function QField({ label, value, onChange, disabled }) {
   return (
     <div>
-      <div style={{ fontSize: 11, color: "#9AA5C0", marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>{label}</div>
       <input
         type="number"
         min={0}
@@ -549,10 +726,30 @@ function QField({ label, value, onChange, disabled }) {
         onChange={(e) => onChange(e.target.value)}
         style={inputStyle({
           width: "100%",
-          opacity: disabled ? 0.35 : 1,
+          opacity: disabled ? 0.4 : 1,
         })}
       />
     </div>
+  );
+}
+
+function Badge({ children }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "3px 10px",
+        borderRadius: 999,
+        background: C.accent,
+        color: "#FFFFFF",
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: 1,
+      }}
+    >
+      {children}
+    </span>
   );
 }
 
@@ -562,8 +759,8 @@ function SectionLabel({ children, style }) {
       style={{
         fontSize: 13,
         fontWeight: 700,
-        color: "#F5F1E6",
-        borderLeft: "3px solid #C9A227",
+        color: C.ink,
+        borderLeft: `3px solid ${C.accent}`,
         paddingLeft: 8,
         marginBottom: 10,
         ...style,
@@ -582,22 +779,48 @@ function ResultRow({ label, value, strong, note, isPoints }) {
         justifyContent: "space-between",
         alignItems: "center",
         padding: "8px 4px",
-        borderBottom: "1px solid #1F2E52",
+        borderBottom: `1px solid ${C.lineSoft}`,
         fontSize: strong ? 14 : 13,
-        color: strong ? "#F5F1E6" : "#B8C0DB",
+        color: strong ? C.ink : C.body,
         fontWeight: strong ? 700 : 400,
       }}
     >
       <span>
         {label}
         {note && (
-          <span style={{ fontSize: 11, color: "#6B7796", marginLeft: 8 }}>
+          <span style={{ fontSize: 11, color: C.muted, marginLeft: 8 }}>
             {note}
           </span>
         )}
       </span>
-      <span style={{ color: strong ? "#C9A227" : "#B8C0DB" }}>
+      <span style={{ color: strong ? C.accent : C.body, fontVariantNumeric: "tabular-nums" }}>
         {isPoints ? value : `NT$ ${fmt(value)}`}
+      </span>
+    </div>
+  );
+}
+
+function LedgerRow({ label, value, last }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "10px 0",
+        borderBottom: last ? "none" : `1px solid ${C.lineSoft}`,
+        fontSize: 13.5,
+      }}
+    >
+      <span style={{ color: C.body }}>{label}</span>
+      <span
+        style={{
+          color: C.ink,
+          fontWeight: 600,
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        NT$ {fmt(value)}
       </span>
     </div>
   );
@@ -614,21 +837,22 @@ const Th = ({ children }) => (
     style={{
       textAlign: "left",
       padding: "6px 8px",
-      color: "#9AA5C0",
+      color: C.muted,
       fontWeight: 500,
-      borderBottom: "1px solid #2A3A5C",
+      borderBottom: `1px solid ${C.line}`,
     }}
   >
     {children}
   </th>
 );
-const Td = ({ children, strong, gold }) => (
+const Td = ({ children, strong, accent }) => (
   <td
     style={{
       padding: "6px 8px",
-      color: gold ? "#C9A227" : strong ? "#F5F1E6" : "#B8C0DB",
+      color: accent ? C.accent : strong ? C.ink : C.body,
       fontWeight: strong ? 700 : 400,
-      borderBottom: "1px solid #16223F",
+      borderBottom: `1px solid ${C.lineSoft}`,
+      fontVariantNumeric: "tabular-nums",
     }}
   >
     {children}
@@ -637,13 +861,14 @@ const Td = ({ children, strong, gold }) => (
 
 function inputStyle(extra) {
   return {
-    background: "#0B1730",
-    border: "1px solid #2A3A5C",
+    background: C.surface,
+    border: `1px solid ${C.line}`,
     borderRadius: 6,
-    color: "#F5F1E6",
+    color: C.ink,
     padding: "7px 9px",
     fontSize: 13,
     outline: "none",
+    fontFamily: sans,
     ...extra,
   };
 }
@@ -656,9 +881,9 @@ const addBtnStyle = {
   width: "100%",
   padding: "9px",
   borderRadius: 8,
-  border: "1px dashed #C9A227",
+  border: `1px dashed ${C.accent}`,
   background: "transparent",
-  color: "#C9A227",
+  color: C.accent,
   fontSize: 13,
   cursor: "pointer",
 };
