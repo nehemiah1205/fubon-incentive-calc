@@ -6,5 +6,4 @@ import react from "@vitejs/plugin-react";
 // 若之後改 repo 名稱，記得同步修改這裡
 export default defineConfig({
   plugins: [react()],
-  base: "/fubon-incentive-calculator/",
-});
+  base: '/fubon-incentive-calc/',
