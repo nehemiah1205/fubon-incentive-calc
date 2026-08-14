@@ -186,7 +186,7 @@ export default function App() {
     <div
       style={{
         background: "#0B1B3A",
-        minHeight: "100vh",
+        minHeight: "100%",
         color: "#E8E4D8",
         fontFamily:
           "'Noto Sans TC','Microsoft JhengHei',system-ui,sans-serif",
@@ -543,7 +543,8 @@ function QField({ label, value, onChange, disabled }) {
       <input
         type="number"
         min={0}
-        value={value}
+        value={value === 0 ? "" : value}
+        placeholder="0"
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
         style={inputStyle({
